@@ -6,78 +6,56 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Конфигурация страницы
 st.set_page_config(page_title="Logistics Standard MVP", layout="wide", initial_sidebar_state="expanded")
 
-# Кастомный дизайн (CSS) - ПОЛНАЯ ТЕМНАЯ ТЕМА (Инверсия всех элементов)
+# Кастомный дизайн (CSS) - Исправлены цвета текста на белых плашках
 st.markdown("""
     <style>
-    /* 1. Фоны основных зон */
-    [data-testid="stAppViewContainer"] { background-color: #0e1117 !important; }
-    [data-testid="stSidebar"] { background-color: #161b22 !important; border-right: 1px solid #30363d !important; }
-    [data-testid="stHeader"] { background-color: #0e1117 !important; }
-    
-    /* 2. Глобальный текст (заголовки, абзацы, лейблы) */
-    h1, h2, h3, h4, h5, h6, p, span, label, li { 
-        color: #c9d1d9 !important; 
-    }
-    
-    /* 3. Кнопки (Buttons) */
-    .stButton > button {
-        background-color: #21262d !important;
-        color: #c9d1d9 !important;
-        border: 1px solid #30363d !important;
-        border-radius: 6px !important;
-        transition: all 0.2s ease-in-out;
-    }
-    .stButton > button:hover {
-        background-color: #30363d !important;
-        border-color: #8b949e !important;
-        color: #ffffff !important;
-    }
-
-    /* 4. Поля выбора (Selectbox, Radio) */
-    [data-baseweb="select"] > div { 
-        background-color: #161b22 !important; 
-        border-color: #30363d !important; 
-    }
-    [data-baseweb="select"] * { color: #e6edf3 !important; }
-    [data-testid="stRadio"] label { cursor: pointer; }
-
-    /* 5. Карточки метрик (OTIF, Риски и т.д.) */
-    [data-testid="stMetric"] {
-        background-color: #1c2128 !important; 
+   .main { background-color: #f0f2f6; }
+   
+   /* Стилизация карточек метрик */
+   [data-testid="stMetric"] {
+        background-color: #ffffff !important; 
         padding: 20px !important; 
         border-radius: 12px !important; 
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.07) !important; 
         border-left: 6px solid #0052cc !important;
-    }
-    [data-testid="stMetricLabel"] * { color: #8b949e !important; font-weight: 600 !important; }
-    [data-testid="stMetricValue"] * { color: #58a6ff !important; font-weight: 800 !important; }
-    [data-testid="stMetricDelta"] * { font-weight: bold !important; }
+   }
+   
+   /* Принудительный цвет для заголовка метрики (Label) */
+   [data-testid="stMetricLabel"] > div {
+        color: #555555 !important;
+        font-weight: 600 !important;
+        font-size: 1rem !important;
+   }
+   
+   /* Принудительный цвет для значения метрики (Value) */
+   [data-testid="stMetricValue"] > div {
+        color: #0052cc !important;
+        font-weight: 800 !important;
+   }
 
-    /* 6. Экспандеры (Мои грузы) */
-    .stExpander { 
-        border: 1px solid #30363d !important; 
-        background-color: #161b22 !important; 
-        border-radius: 8px !important; 
+   .timeline-container { 
+        display: flex; 
+        justify-content: space-between; 
+        margin: 20px 0; 
+        padding: 15px; 
+        background: #ffffff; 
+        border-radius: 8px; 
+        border: 1px solid #e0e0e0;
     }
-    .stExpander summary p { font-weight: 700 !important; color: #ffffff !important; font-size: 1.05rem !important;}
-    
-    /* 7. HTML-Таймлайн статусов */
-    .timeline-container { 
-        display: flex; justify-content: space-between; margin: 20px 0; padding: 15px; 
-        background: #0e1117; border-radius: 8px; border: 1px solid #30363d;
+   .step { text-align: center; width: 19%; font-size: 0.7rem; color: #444; }
+   .step-icon { 
+        width: 22px; height: 22px; 
+        border-radius: 50%; 
+        margin: 0 auto 5px; 
+        line-height: 22px; 
+        color: white; 
+        font-weight: bold; 
+        font-size: 0.8rem;
     }
-    .step { text-align: center; width: 19%; font-size: 0.75rem; color: #8b949e !important; }
-    .step-icon { 
-        width: 22px; height: 22px; border-radius: 50%; margin: 0 auto 5px; 
-        line-height: 22px; color: #ffffff !important; font-weight: bold; font-size: 0.8rem;
-    }
-    .completed { background-color: #238636 !important; } /* Зеленый github */
-    .in-progress { background-color: #d29922 !important; } /* Оранжевый */
-    .planned { background-color: #21262d !important; color: #484f58 !important; border: 1px solid #30363d; }
-    .risk-alert { color: #f85149 !important; font-weight: bold; }
-    
-    /* 8. Инфо-боксы (success, info, warning, error) */
-    [data-testid="stAlert"] { background-color: #1c2128 !important; border: 1px solid #30363d !important; }
+   .completed { background-color: #28a745; }
+   .in-progress { background-color: #ffc107; }
+   .planned { background-color: #dee2e6; color: #6c757d; }
+   .risk-alert { color: #dc3545; font-weight: bold; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -120,6 +98,7 @@ client_data = df_ship[df_ship['client_name'] == user_company].copy()
 if menu == "🏠 Обзор":
     st.header(f"Рабочий стол: {user_company}")
     
+    # Метрики
     m1, m2, m3, m4 = st.columns(4)
     with m1:
         st.metric("В пути сейчас", len(client_data[client_data['status']!= 'Завершено']))
@@ -131,6 +110,7 @@ if menu == "🏠 Обзор":
     with m4:
         st.metric("OTIF (тек. мес)", "94.2%")
 
+    # Карта
     st.subheader("География текущих поставок")
     if not client_data.empty:
         view_state = pdk.ViewState(latitude=client_data['lat'].mean(), longitude=client_data['lon'].mean(), zoom=3)
@@ -138,7 +118,7 @@ if menu == "🏠 Обзор":
             "ScatterplotLayer",
             client_data,
             get_position=["lon", "lat"],
-            get_color=[88, 166, 255, 200],
+            get_color=[0, 82, 204, 200],
             get_radius=150000,
             pickable=True
         )
@@ -148,12 +128,21 @@ if menu == "🏠 Обзор":
 elif menu == "🚢 Мои грузы":
     st.header("Активные перевозки")
     
+    # Функция для генерации динамического таймлайна в зависимости от статуса
     def generate_timeline(status):
         stages = ["Склад", "Порт/ЖД", "В пути", "Таможня", "Финиш"]
-        status_map = {"Склад консолидации": 0, "В пути": 2, "Таможня": 3, "Завершено": 4}
+        
+        status_map = {
+            "Склад консолидации": 0,
+            "В пути": 2, 
+            "Таможня": 3,
+            "Завершено": 4
+        }
+        
         current_stage_index = status_map.get(status, 2) 
         
         timeline_html = '<div class="timeline-container">'
+        
         for i, stage in enumerate(stages):
             if i < current_stage_index:
                 timeline_html += f'<div class="step"><div class="step-icon completed">✓</div>{stage}</div>'
@@ -164,6 +153,7 @@ elif menu == "🚢 Мои грузы":
                     timeline_html += f'<div class="step"><div class="step-icon in-progress">...</div>{stage}</div>'
             else:
                 timeline_html += f'<div class="step"><div class="step-icon planned">○</div>{stage}</div>'
+                
         timeline_html += '</div>'
         return timeline_html
 
@@ -174,8 +164,10 @@ elif menu == "🚢 Мои грузы":
         with st.expander(f"{status_icon} ID {ship['shipment_id']} | {ship['origin']} ➔ {ship['destination']}"):
             c1, c2 = st.columns([5, 6])
             with c1:
+                # Отрисовка динамического таймлайна
                 st.markdown(generate_timeline(ship['status']), unsafe_allow_html=True)
                 st.write(f"**Текущий статус:** {ship['status']}")
+            
             with c2:
                 st.write(f"**План (ETA):** {ship['eta_planned']}")
                 p_eta_style = "risk-alert" if is_delayed else ""
@@ -192,6 +184,7 @@ elif menu == "📑 Документы":
 elif menu == "📊 KPI Аналитика":
     st.header("Эффективность логистики")
     col_kpi1, col_kpi2 = st.columns(2)
+    
     with col_kpi1:
         st.subheader("Надежность OTIF %")
         otif_history = pd.DataFrame({
@@ -199,6 +192,7 @@ elif menu == "📊 KPI Аналитика":
             'OTIF %': [89.0, 91.5, 92.8, 94.2]
         })
         st.line_chart(otif_history.set_index('Месяц'))
+        
     with col_kpi2:
         st.subheader("Виды транспорта")
         mode_counts = client_data['mode'].value_counts()
