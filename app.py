@@ -114,15 +114,24 @@ if menu == "🏠 Обзор":
     st.subheader("География текущих поставок")
     if not client_data.empty:
         view_state = pdk.ViewState(latitude=client_data['lat'].mean(), longitude=client_data['lon'].mean(), zoom=3)
+        
+        # Исправленный слой карты: точки теперь не увеличиваются до размеров города
         layer = pdk.Layer(
             "ScatterplotLayer",
             client_data,
             get_position=["lon", "lat"],
-            get_color=[0, 82, 204, 200],
-            get_radius=150000,
+            get_color=[0, 82, 204, 210],
+            get_radius=10, # Базовый радиус
+            radius_min_pixels=6,  # Точка не будет меньше 6 пикселей при отдалении
+            radius_max_pixels=12, # Точка не будет больше 12 пикселей при приближении
             pickable=True
         )
-        st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view_state, tooltip={"text": "Груз: {shipment_id}\nСтатус: {status}"}))
+        
+        st.pydeck_chart(pdk.Deck(
+            layers=[layer], 
+            initial_view_state=view_state, 
+            tooltip={"text": "Груз: {shipment_id}\nСтатус: {status}"}
+        ))
 
 # 5. Вкладка: МОИ ГРУЗЫ
 elif menu == "🚢 Мои грузы":
