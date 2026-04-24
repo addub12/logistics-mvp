@@ -6,18 +6,32 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Конфигурация страницы
 st.set_page_config(page_title="Logistics Standard MVP", layout="wide", initial_sidebar_state="expanded")
 
-# Кастомный дизайн (CSS) - ТЕМНАЯ ТЕМА ПО УМОЛЧАНИЮ
+# Кастомный дизайн (CSS) - ЖЕСТКАЯ ТЕМНАЯ ТЕМА ВЕЗДЕ
 st.markdown("""
     <style>
-    /* Фон всей страницы */
-    .stApp {
-        background-color: #0e1117;
-        color: #ffffff;
+    /* 1. Главный фон приложения */
+    [data-testid="stAppViewContainer"] {
+        background-color: #0e1117 !important;
+    }
+    
+    /* 2. Боковое меню (Sidebar) */
+    [data-testid="stSidebar"] {
+        background-color: #161b22 !important;
+    }
+    
+    /* 3. Верхняя панель (Header с тремя точками) */
+    [data-testid="stHeader"] {
+        background-color: #0e1117 !important;
+    }
+    
+    /* Принудительный цвет текста для всех базовых элементов (чтобы не сливался с темным фоном) */
+    html, body, [class*="css"], [data-testid="stSidebar"] * {
+        color: #c9d1d9 !important;
     }
     
     /* Стилизация карточек метрик (Dark Mode) */
     [data-testid="stMetric"] {
-        background-color: #161b22 !important; 
+        background-color: #1c2128 !important; 
         padding: 20px !important; 
         border-radius: 12px !important; 
         box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important; 
@@ -124,7 +138,7 @@ if menu == "🏠 Обзор":
             "ScatterplotLayer",
             client_data,
             get_position=["lon", "lat"],
-            get_color=[88, 166, 255, 200], # Более яркий голубой для темной темы
+            get_color=[88, 166, 255, 200],
             get_radius=150000,
             pickable=True
         )
