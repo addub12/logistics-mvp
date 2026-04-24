@@ -6,30 +6,42 @@ from streamlit_gsheets import GSheetsConnection
 # 1. Конфигурация страницы
 st.set_page_config(page_title="Logistics Standard MVP", layout="wide", initial_sidebar_state="expanded")
 
-# Кастомный дизайн (CSS) - ЖЕСТКАЯ ТЕМНАЯ ТЕМА ВЕЗДЕ
+# Кастомный дизайн (CSS) - ПОЛНАЯ ТЕМНАЯ ТЕМА (Инверсия всех элементов)
 st.markdown("""
     <style>
-    /* 1. Главный фон приложения */
-    [data-testid="stAppViewContainer"] {
-        background-color: #0e1117 !important;
+    /* 1. Фоны основных зон */
+    [data-testid="stAppViewContainer"] { background-color: #0e1117 !important; }
+    [data-testid="stSidebar"] { background-color: #161b22 !important; border-right: 1px solid #30363d !important; }
+    [data-testid="stHeader"] { background-color: #0e1117 !important; }
+    
+    /* 2. Глобальный текст (заголовки, абзацы, лейблы) */
+    h1, h2, h3, h4, h5, h6, p, span, label, li { 
+        color: #c9d1d9 !important; 
     }
     
-    /* 2. Боковое меню (Sidebar) */
-    [data-testid="stSidebar"] {
-        background-color: #161b22 !important;
-    }
-    
-    /* 3. Верхняя панель (Header с тремя точками) */
-    [data-testid="stHeader"] {
-        background-color: #0e1117 !important;
-    }
-    
-    /* Принудительный цвет текста для всех базовых элементов (чтобы не сливался с темным фоном) */
-    html, body, [class*="css"], [data-testid="stSidebar"] * {
+    /* 3. Кнопки (Buttons) */
+    .stButton > button {
+        background-color: #21262d !important;
         color: #c9d1d9 !important;
+        border: 1px solid #30363d !important;
+        border-radius: 6px !important;
+        transition: all 0.2s ease-in-out;
     }
-    
-    /* Стилизация карточек метрик (Dark Mode) */
+    .stButton > button:hover {
+        background-color: #30363d !important;
+        border-color: #8b949e !important;
+        color: #ffffff !important;
+    }
+
+    /* 4. Поля выбора (Selectbox, Radio) */
+    [data-baseweb="select"] > div { 
+        background-color: #161b22 !important; 
+        border-color: #30363d !important; 
+    }
+    [data-baseweb="select"] * { color: #e6edf3 !important; }
+    [data-testid="stRadio"] label { cursor: pointer; }
+
+    /* 5. Карточки метрик (OTIF, Риски и т.д.) */
     [data-testid="stMetric"] {
         background-color: #1c2128 !important; 
         padding: 20px !important; 
@@ -37,47 +49,35 @@ st.markdown("""
         box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important; 
         border-left: 6px solid #0052cc !important;
     }
-    
-    /* Цвет заголовка метрики */
-    [data-testid="stMetricLabel"] > div {
-        color: #8b949e !important;
-        font-weight: 600 !important;
-        font-size: 0.9rem !important;
-    }
-    
-    /* Цвет значения метрики */
-    [data-testid="stMetricValue"] > div {
-        color: #58a6ff !important;
-        font-weight: 800 !important;
-    }
+    [data-testid="stMetricLabel"] * { color: #8b949e !important; font-weight: 600 !important; }
+    [data-testid="stMetricValue"] * { color: #58a6ff !important; font-weight: 800 !important; }
+    [data-testid="stMetricDelta"] * { font-weight: bold !important; }
 
-    /* Таймлайн контейнер в темном стиле */
-    .timeline-container { 
-        display: flex; 
-        justify-content: space-between; 
-        margin: 20px 0; 
-        padding: 15px; 
-        background: #1c2128; 
-        border-radius: 8px; 
-        border: 1px solid #30363d;
+    /* 6. Экспандеры (Мои грузы) */
+    .stExpander { 
+        border: 1px solid #30363d !important; 
+        background-color: #161b22 !important; 
+        border-radius: 8px !important; 
     }
-    .step { text-align: center; width: 19%; font-size: 0.7rem; color: #c9d1d9; }
-    .step-icon { 
-        width: 22px; height: 22px; 
-        border-radius: 50%; 
-        margin: 0 auto 5px; 
-        line-height: 22px; 
-        color: white; 
-        font-weight: bold; 
-        font-size: 0.8rem;
-    }
-    .completed { background-color: #238636; }
-    .in-progress { background-color: #d29922; }
-    .planned { background-color: #30363d; color: #8b949e; }
-    .risk-alert { color: #f85149; font-weight: bold; }
+    .stExpander summary p { font-weight: 700 !important; color: #ffffff !important; font-size: 1.05rem !important;}
     
-    /* Исправление цвета текста в таблицах и экспандерах для темной темы */
-    .stExpander { border: 1px solid #30363d !important; background-color: #0e1117 !important; }
+    /* 7. HTML-Таймлайн статусов */
+    .timeline-container { 
+        display: flex; justify-content: space-between; margin: 20px 0; padding: 15px; 
+        background: #0e1117; border-radius: 8px; border: 1px solid #30363d;
+    }
+    .step { text-align: center; width: 19%; font-size: 0.75rem; color: #8b949e !important; }
+    .step-icon { 
+        width: 22px; height: 22px; border-radius: 50%; margin: 0 auto 5px; 
+        line-height: 22px; color: #ffffff !important; font-weight: bold; font-size: 0.8rem;
+    }
+    .completed { background-color: #238636 !important; } /* Зеленый github */
+    .in-progress { background-color: #d29922 !important; } /* Оранжевый */
+    .planned { background-color: #21262d !important; color: #484f58 !important; border: 1px solid #30363d; }
+    .risk-alert { color: #f85149 !important; font-weight: bold; }
+    
+    /* 8. Инфо-боксы (success, info, warning, error) */
+    [data-testid="stAlert"] { background-color: #1c2128 !important; border: 1px solid #30363d !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -102,7 +102,7 @@ if df_ship is None:
 # 3. Sidebar (Навигация)
 with st.sidebar:
     st.title("📦 Logistics Portal")
-    st.info("Тариф: **STANDARD** (Dark Mode)")
+    st.info("Тариф: **STANDARD**")
     
     unique_clients = df_ship['client_name'].unique()
     user_company = st.selectbox("Клиент:", unique_clients)
