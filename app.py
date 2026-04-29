@@ -4,205 +4,119 @@ import pydeck as pdk
 from streamlit_gsheets import GSheetsConnection
 
 # 1. Конфигурация страницы
-st.set_page_config(page_title="Logistics Standard MVP", layout="wide", initial_sidebar_state="expanded")
-
-# Кастомный дизайн (CSS) - Исправлены цвета текста на белых плашках
-st.markdown("""
-    <style>
-   .main { background-color: #f0f2f6; }
-   
-   /* Стилизация карточек метрик */
-   [data-testid="stMetric"] {
-        background-color: #ffffff !important; 
-        padding: 20px !important; 
-        border-radius: 12px !important; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.07) !important; 
-        border-left: 6px solid #0052cc !important;
-   }
-   
-   /* Принудительный цвет для заголовка метрики (Label) */
-   [data-testid="stMetricLabel"] > div {
-        color: #555555 !important;
-        font-weight: 600 !important;
-        font-size: 1rem !important;
-   }
-   
-   /* Принудительный цвет для значения метрики (Value) */
-   [data-testid="stMetricValue"] > div {
-        color: #0052cc !important;
-        font-weight: 800 !important;
-   }
-
-   .timeline-container { 
-        display: flex; 
-        justify-content: space-between; 
-        margin: 20px 0; 
-        padding: 15px; 
-        background: #ffffff; 
-        border-radius: 8px; 
-        border: 1px solid #e0e0e0;
-    }
-   .step { text-align: center; width: 19%; font-size: 0.7rem; color: #444; }
-   .step-icon { 
-        width: 22px; height: 22px; 
-        border-radius: 50%; 
-        margin: 0 auto 5px; 
-        line-height: 22px; 
-        color: white; 
-        font-weight: bold; 
-        font-size: 0.8rem;
-    }
-   .completed { background-color: #28a745; }
-   .in-progress { background-color: #ffc107; }
-   .planned { background-color: #dee2e6; color: #6c757d; }
-   .risk-alert { color: #dc3545; font-weight: bold; }
-    </style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="VASP | L-Control Dashboard", layout="wide", initial_sidebar_state="expanded")
 
 # 2. Подключение к данным
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-@st.cache_data(ttl=300)
-def load_data():
-    try:
-        shipments = conn.read(worksheet="Main_Shipments")
-        docs = conn.read(worksheet="Documents")
-        return shipments, docs
-    except Exception as e:
-        st.error(f"Ошибка чтения данных: {e}")
-        return None, None
-
-df_ship, df_docs = load_data()
-
-if df_ship is None:
+try:
+    conn = st.connection("gsheets", type=GSheetsConnection)
+    df = conn.read()
+except Exception as e:
+    st.error(f"Ошибка подключения к Google Sheets: {e}")
     st.stop()
 
-# 3. Sidebar (Навигация)
-with st.sidebar:
-    st.title("📦 Logistics Portal")
-    st.info("Тариф: **STANDARD**")
+# 3. Боковая панель
+st.sidebar.title("Личный кабинет VASP")
+
+clients = df['client_name'].unique()
+selected_client = st.sidebar.selectbox("Выберите компанию:", clients)
+
+client_data = df[df['client_name'] == selected_client]
+
+st.sidebar.markdown("---")
+manager_name = client_data['manager_name'].iloc[0]
+st.sidebar.subheader("Ваш менеджер")
+st.sidebar.info(f"👤 {manager_name}")
+if st.sidebar.button("💬 Написать в чат"):
+    st.sidebar.success("Чат открыт (внутренняя система VASP)")
+
+# 4. Главный экран: Верхние метрики
+st.title(f"Мониторинг грузов: {selected_client}")
+
+shipment_ids = client_data['shipment_id'].unique()
+selected_shipment_id = st.selectbox("Выберите номер груза для деталей:", shipment_ids)
+ship = client_data[client_data['shipment_id'] == selected_shipment_id].iloc[0]
+
+col1, col2, col3, col4 = st.columns(4)
+
+balance = ship['balance']
+col1.metric("Текущий баланс", f"{balance:,.0f} ₽", delta="К оплате" if balance < 0 else "Ок", delta_color="normal" if balance >= 0 else "inverse")
+
+demurrage = ship['demurrage_free_days']
+col2.metric("Дней до платного хранения", f"{demurrage} дн.", delta="- Внимание" if demurrage <= 3 else "Ок", delta_color="inverse" if demurrage <= 3 else "normal")
+
+delay = int(ship['delay_days'])
+col3.metric("Задержка (План/Факт)", f"{delay} дн.", delta=f"+{delay} дн." if delay > 0 else "В графике", delta_color="inverse" if delay > 0 else "normal")
+
+congestion = ship['border_congestion']
+col4.metric("Затор на границе", congestion, delta="Влияет на ETA" if congestion == "Высокий" else None, delta_color="inverse" if congestion == "Высокий" else "normal")
+
+# 5. Основной контент
+tab1, tab2, tab3, tab4 = st.tabs(["📍 Карта и Трекинг", "💰 Финансы и Таможня", "📑 Документы и Фото", "📈 Аналитика"])
+
+with tab1:
+    st.subheader("Местоположение 24/7 (п. 2.1)")
+    view_state = pdk.ViewState(latitude=ship['lat'], longitude=ship['lon'], zoom=5, pitch=0)
+    layer = pdk.Layer(
+        "ScatterplotLayer",
+        data=pd.DataFrame([{'lat': ship['lat'], 'lon': ship['lon']}]),
+        get_position="[lon, lat]",
+        get_color="[0, 82, 204, 160]", # Полупрозрачный синий (хорошо виден на любой карте)
+        get_radius=20000,
+    )
+    st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view_state))
     
-    unique_clients = df_ship['client_name'].unique()
-    user_company = st.selectbox("Клиент:", unique_clients)
-    st.markdown("---")
-    st.success("🔔 Telegram Bot: Connected")
+    c1, c2 = st.columns(2)
+    with c1:
+        st.info(f"**Статус:** {ship['status']}")
+        st.write(f"**Прогноз прибытия (ETA):** {ship['eta_predicted']}")
+    with c2:
+        st.warning(f"**Дней простоя на терминале:** {ship['terminal_idle_days']} дн. (п. 4.2)")
+
+with tab2:
+    st.subheader("Финансовый и таможенный контроль")
+    f1, f2 = st.columns(2)
     
-    menu = st.radio("Разделы:", ["🏠 Обзор", "🚢 Мои грузы", "📑 Документы", "📊 KPI Аналитика"])
-    st.markdown("---")
-    st.button("💬 Чат с менеджером")
+    with f1:
+        # Используем нативные контейнеры Streamlit вместо HTML/CSS
+        with st.container(border=True):
+            st.markdown("#### Валютный калькулятор (п. 1.2)")
+            st.write(f"Текущий курс: **{ship['exchange_rate']} ₽**")
+            st.success("Фиксация курса сегодня сэкономит вам ~12,400 ₽")
+        
+        with st.container(border=True):
+            st.markdown("#### Таможенные платежи (п. 1.3)")
+            st.write(f"Прогноз налогов: **{ship['customs_fee_forecast']:,.0f} ₽**")
+            st.caption("Бюджет спланирован без сюрпризов")
 
-# Фильтр по компании
-client_data = df_ship[df_ship['client_name'] == user_company].copy()
-
-# 4. Вкладка: ОБЗОР
-if menu == "🏠 Обзор":
-    st.header(f"Рабочий стол: {user_company}")
-    
-    # Метрики
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        st.metric("В пути сейчас", len(client_data[client_data['status']!= 'Завершено']))
-    with m2:
-        risks = len(client_data[client_data['eta_predicted'] > client_data['eta_planned']])
-        st.metric("Риски задержек", risks, delta=f"{risks} объекта", delta_color="inverse")
-    with m3:
-        st.metric("На таможне", len(client_data[client_data['status'] == 'Таможня']))
-    with m4:
-        st.metric("OTIF (тек. мес)", "94.2%")
-
-    # Карта
-    st.subheader("География текущих поставок")
-    if not client_data.empty:
-        view_state = pdk.ViewState(latitude=client_data['lat'].mean(), longitude=client_data['lon'].mean(), zoom=3)
-        
-        # Исправленный слой карты: точки теперь не увеличиваются до размеров города
-        layer = pdk.Layer(
-            "ScatterplotLayer",
-            client_data,
-            get_position=["lon", "lat"],
-            get_color=[0, 82, 204, 210],
-            get_radius=10, # Базовый радиус
-            radius_min_pixels=6,  # Точка не будет меньше 6 пикселей при отдалении
-            radius_max_pixels=12, # Точка не будет больше 12 пикселей при приближении
-            pickable=True
-        )
-        
-        st.pydeck_chart(pdk.Deck(
-            layers=[layer], 
-            initial_view_state=view_state, 
-            tooltip={"text": "Груз: {shipment_id}\nСтатус: {status}"}
-        ))
-
-# 5. Вкладка: МОИ ГРУЗЫ
-elif menu == "🚢 Мои грузы":
-    st.header("Активные перевозки")
-    
-    # Функция для генерации динамического таймлайна в зависимости от статуса
-    def generate_timeline(status):
-        stages = ["Склад", "Порт/ЖД", "В пути", "Таможня", "Финиш"]
-        
-        status_map = {
-            "Склад консолидации": 0,
-            "В пути": 2, 
-            "Таможня": 3,
-            "Завершено": 4
-        }
-        
-        current_stage_index = status_map.get(status, 2) 
-        
-        timeline_html = '<div class="timeline-container">'
-        
-        for i, stage in enumerate(stages):
-            if i < current_stage_index:
-                timeline_html += f'<div class="step"><div class="step-icon completed">✓</div>{stage}</div>'
-            elif i == current_stage_index:
-                if status == "Завершено":
-                     timeline_html += f'<div class="step"><div class="step-icon completed">✓</div>{stage}</div>'
-                else:
-                    timeline_html += f'<div class="step"><div class="step-icon in-progress">...</div>{stage}</div>'
-            else:
-                timeline_html += f'<div class="step"><div class="step-icon planned">○</div>{stage}</div>'
-                
-        timeline_html += '</div>'
-        return timeline_html
-
-    for _, ship in client_data.iterrows():
-        is_delayed = ship['eta_predicted'] > ship['eta_planned']
-        status_icon = "🔴" if is_delayed else "🟢"
-        
-        with st.expander(f"{status_icon} ID {ship['shipment_id']} | {ship['origin']} ➔ {ship['destination']}"):
-            c1, c2 = st.columns([5, 6])
-            with c1:
-                # Отрисовка динамического таймлайна
-                st.markdown(generate_timeline(ship['status']), unsafe_allow_html=True)
-                st.write(f"**Текущий статус:** {ship['status']}")
+    with f2:
+        with st.container(border=True):
+            st.subheader("Статус оформления (п. 3)")
+            st.write(f"📂 **Документы:** {ship['customs_doc_status']}")
+            st.write(f"📑 **Декларация (ДТ):** {ship['customs_dt_status']}")
             
-            with c2:
-                st.write(f"**План (ETA):** {ship['eta_planned']}")
-                p_eta_style = "risk-alert" if is_delayed else ""
-                st.markdown(f"**Прогноз (pETA):** <span class='{p_eta_style}'>{ship['eta_predicted']}</span>", unsafe_allow_html=True)
+            if ship['inspection_alert'] == "Да":
+                st.error("⚠️ Назначен таможенный досмотр! (п. 3.3)")
+            else:
+                st.success("✅ Проверка проходит без досмотров")
+            
+            st.write(f"🛡️ **Страхование:** {ship['insurance_status']} (п. 6.2)")
 
-# 6. Вкладка: ДОКУМЕНТЫ
-elif menu == "📑 Документы":
-    st.header("Электронный архив документов")
-    ship_ids = client_data['shipment_id'].tolist()
-    relevant_docs = df_docs[df_docs['shipment_id'].isin(ship_ids)]
-    st.dataframe(relevant_docs, use_container_width=True, hide_index=True)
+with tab3:
+    st.subheader("Архив и Фотоотчеты")
+    a1, a2 = st.columns(2)
+    with a1:
+        st.write("📷 **Лента фотоотчетов (п. 5.1):**")
+        photos = str(ship['photo_links']).split(',')
+        for p in photos:
+            st.image("https://via.placeholder.com/400x200?text=Cargo+Photo", caption=f"Отчет: {p.strip()}")
+            
+    with a2:
+        st.write("📂 **Цифровой архив (п. 5.2):**")
+        st.button(f"Скачать документы по грузу {selected_shipment_id}")
+        st.caption(f"Ссылка на Drive: {ship['docs_folder_link']}")
 
-# 7. Вкладка: АНАЛИТИКА
-elif menu == "📊 KPI Аналитика":
-    st.header("Эффективность логистики")
-    col_kpi1, col_kpi2 = st.columns(2)
-    
-    with col_kpi1:
-        st.subheader("Надежность OTIF %")
-        otif_history = pd.DataFrame({
-            'Месяц': ['Янв', 'Фев', 'Мар', 'Апр'], 
-            'OTIF %': [89.0, 91.5, 92.8, 94.2]
-        })
-        st.line_chart(otif_history.set_index('Месяц'))
-        
-    with col_kpi2:
-        st.subheader("Виды транспорта")
-        mode_counts = client_data['mode'].value_counts()
-        st.bar_chart(mode_counts)
+with tab4:
+    st.subheader("Эффективность и LTV")
+    st.write("Здесь будет накапливаться история ваших перевозок для анализа маржинальности и сроков.")
+    chart_data = pd.DataFrame({'Этап': ['Закупка', 'Транзит', 'Таможня', 'Склад'], 'Дней': [5, 12, 3, 2]})
+    st.bar_chart(chart_data, x='Этап', y='Дней')
