@@ -62,9 +62,11 @@ except Exception as e:
     st.error(f"Ошибка подключения к Google Sheets: {e}")
     st.stop()
 
-# 3. Боковая панель
-# Вставьте вашу прямую (raw) ссылку с GitHub!
+# 3. Боковая панель и настройки путей
 LOGO_PATH = "IMG_20260430_182902.webp" 
+
+# 👇 ВСТАВЬТЕ СЮДА ПРЯМУЮ ССЫЛКУ НА ВАШУ ПАПКУ В GITHUB (ОБЯЗАТЕЛЬНО СО СЛЭШЕМ / НА КОНЦЕ) 👇
+GITHUB_PHOTOS_FOLDER = "https://raw.githubusercontent.com/ВАШ_ЛОГИН/ВАШ_РЕПОЗИТОРИЙ/main/НАЗВАНИЕ_ПАПКИ/"
 
 st.sidebar.image(LOGO_PATH, use_container_width=True)
 st.sidebar.markdown("<br>", unsafe_allow_html=True) # Небольшой отступ
@@ -160,9 +162,23 @@ with tab3:
     a1, a2 = st.columns(2)
     with a1:
         st.write("📷 **Лента фотоотчетов (п. 5.1):**")
-        photos = str(ship['photo_links']).split(',')
-        for p in photos:
-            st.image("https://via.placeholder.com/400x200?text=Cargo+Photo", caption=f"Отчет: {p.strip()}")
+        
+        # Загрузка фото: проверяем, есть ли данные в колонке photo_links
+        if 'photo_links' in ship and pd.notna(ship['photo_links']):
+            photos_raw = str(ship['photo_links'])
+            # Исключаем пустые значения или NaN
+            if photos_raw.strip() and photos_raw.lower() not in ['nan', 'none', 'null']:
+                photos = photos_raw.split(',')
+                for p in photos:
+                    filename = p.strip()
+                    if filename:
+                        # Склеиваем путь к папке и имя файла
+                        img_url = f"{GITHUB_PHOTOS_FOLDER}{filename}"
+                        st.image(img_url, caption=f"Отчет: {filename}")
+            else:
+                st.info("Фотоотчеты для данного груза пока не загружены.")
+        else:
+            st.info("Фотоотчеты для данного груза пока не загружены.")
             
     with a2:
         st.write("📂 **Цифровой архив (п. 5.2):**")
