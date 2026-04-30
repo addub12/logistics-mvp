@@ -60,7 +60,7 @@ except Exception as e:
 # 3. Боковая панель
 # Вставьте путь к вашему файлу логотипа или URL. Например: "logo.png" или "https://..."
 # Если файл лежит в той же папке, что и скрипт, просто укажите его имя.
-LOGO_PATH = "https://drive.google.com/file/d/1XYyzKTzjs7GDDQkyTmDajid9igJ_2Gep/view?usp=sharing" 
+LOGO_PATH = "https://drive.google.com/file/d/1XYyzKTzjs7GDDQkyTmDajid9igJ_2Gep" 
 
 st.sidebar.image(LOGO_PATH, use_container_width=True)
 st.sidebar.markdown("<br>", unsafe_allow_html=True) # Небольшой отступ
