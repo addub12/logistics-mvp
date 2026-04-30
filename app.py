@@ -42,9 +42,14 @@ st.markdown("""
         border-bottom-color: #c41230 !important;
     }
     
-    /* Цвет значений метрик (темно-синий) */
+    /* Цвет значений метрик (теперь белый для лучшей читаемости) */
     [data-testid="stMetricValue"] {
-        color: #0b2239;
+        color: white !important; 
+    }
+    
+    /* Цвет названий метрик (например, "Текущий баланс") тоже сделаем светлым на случай темной темы */
+    [data-testid="stMetricLabel"] {
+        color: #e0e0e0 !important; 
     }
     </style>
 """, unsafe_allow_html=True)
@@ -58,7 +63,7 @@ except Exception as e:
     st.stop()
 
 # 3. Боковая панель
-# Прямая ссылка на изображение с Google Drive (с параметром uc?export=view)
+# Вставьте вашу прямую (raw) ссылку с GitHub!
 LOGO_PATH = "IMG_20260430_182902.webp" 
 
 st.sidebar.image(LOGO_PATH, use_container_width=True)
@@ -109,7 +114,7 @@ with tab1:
         "ScatterplotLayer",
         data=pd.DataFrame([{'lat': ship['lat'], 'lon': ship['lon']}]),
         get_position="[lon, lat]",
-        # Заменили цвет маркера на корпоративный красный (RGB: 196, 18, 48) для контраста
+        # Цвет маркера на карте (корпоративный красный)
         get_color="[196, 18, 48, 200]", 
         get_radius=25000,
     )
@@ -168,5 +173,5 @@ with tab4:
     st.subheader("Эффективность и LTV")
     st.write("Здесь будет накапливаться история ваших перевозок для анализа маржинальности и сроков.")
     chart_data = pd.DataFrame({'Этап': ['Закупка', 'Транзит', 'Таможня', 'Склад'], 'Дней': [5, 12, 3, 2]})
-    # Добавлен параметр color для графика в корпоративном красном цвете
+    # График в корпоративном красном цвете
     st.bar_chart(chart_data, x='Этап', y='Дней', color="#c41230")
