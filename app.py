@@ -47,7 +47,7 @@ st.markdown("""
         color: #0b2239;
     }
     </style>
-""", unsafe_allow_status=True)
+""", unsafe_allow_html=True)
 
 # 2. Подключение к данным
 try:
