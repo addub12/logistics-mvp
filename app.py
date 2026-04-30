@@ -59,7 +59,7 @@ except Exception as e:
 
 # 3. Боковая панель
 # Прямая ссылка на изображение с Google Drive (с параметром uc?export=view)
-LOGO_PATH = "https://drive.google.com/uc?export=view&id=1XYyzKTzjs7GDDQkyTmDajid9igJ_2Gep" 
+LOGO_PATH = "IMG_20260430_182902.webp" 
 
 st.sidebar.image(LOGO_PATH, use_container_width=True)
 st.sidebar.markdown("<br>", unsafe_allow_html=True) # Небольшой отступ
