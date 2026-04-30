@@ -4,7 +4,50 @@ import pydeck as pdk
 from streamlit_gsheets import GSheetsConnection
 
 # 1. Конфигурация страницы
-st.set_page_config(page_title="VASP | L-Control Dashboard", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="Falcon Group | L-Control Dashboard", 
+    page_icon="🦅", 
+    layout="wide", 
+    initial_sidebar_state="expanded"
+)
+
+# --- ИНТЕГРАЦИЯ КОРПОРАТИВНОГО СТИЛЯ (CSS) ---
+st.markdown("""
+    <style>
+    /* Темно-синий фон для боковой панели */
+    [data-testid="stSidebar"] {
+        background-color: #0b2239;
+    }
+    
+    /* Белый текст в боковой панели */
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+
+    /* Стилизация кнопок (корпоративный красный) */
+    div.stButton > button:first-child {
+        background-color: #c41230;
+        color: white;
+        border: none;
+        border-radius: 4px;
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #a30e27;
+        color: white;
+    }
+
+    /* Стилизация активной вкладки (красный акцент) */
+    .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
+        color: #c41230 !important;
+        border-bottom-color: #c41230 !important;
+    }
+    
+    /* Цвет значений метрик (темно-синий) */
+    [data-testid="stMetricValue"] {
+        color: #0b2239;
+    }
+    </style>
+""", unsafe_allow_status=True)
 
 # 2. Подключение к данным
 try:
@@ -15,7 +58,14 @@ except Exception as e:
     st.stop()
 
 # 3. Боковая панель
-st.sidebar.title("Личный кабинет VASP")
+# Вставьте путь к вашему файлу логотипа или URL. Например: "logo.png" или "https://..."
+# Если файл лежит в той же папке, что и скрипт, просто укажите его имя.
+LOGO_PATH = "https://drive.google.com/file/d/1XYyzKTzjs7GDDQkyTmDajid9igJ_2Gep/view?usp=sharing" 
+
+st.sidebar.image(LOGO_PATH, use_container_width=True)
+st.sidebar.markdown("<br>", unsafe_allow_html=True) # Небольшой отступ
+
+st.sidebar.title("Личный кабинет")
 
 clients = df['client_name'].unique()
 selected_client = st.sidebar.selectbox("Выберите компанию:", clients)
@@ -27,7 +77,7 @@ manager_name = client_data['manager_name'].iloc[0]
 st.sidebar.subheader("Ваш менеджер")
 st.sidebar.info(f"👤 {manager_name}")
 if st.sidebar.button("💬 Написать в чат"):
-    st.sidebar.success("Чат открыт (внутренняя система VASP)")
+    st.sidebar.success("Чат открыт (внутренняя система Falcon)")
 
 # 4. Главный экран: Верхние метрики
 st.title(f"Мониторинг грузов: {selected_client}")
@@ -60,8 +110,9 @@ with tab1:
         "ScatterplotLayer",
         data=pd.DataFrame([{'lat': ship['lat'], 'lon': ship['lon']}]),
         get_position="[lon, lat]",
-        get_color="[0, 82, 204, 160]", # Полупрозрачный синий (хорошо виден на любой карте)
-        get_radius=20000,
+        # Заменили цвет маркера на корпоративный красный (RGB: 196, 18, 48) для контраста
+        get_color="[196, 18, 48, 200]", 
+        get_radius=25000,
     )
     st.pydeck_chart(pdk.Deck(layers=[layer], initial_view_state=view_state))
     
@@ -77,7 +128,6 @@ with tab2:
     f1, f2 = st.columns(2)
     
     with f1:
-        # Используем нативные контейнеры Streamlit вместо HTML/CSS
         with st.container(border=True):
             st.markdown("#### Валютный калькулятор (п. 1.2)")
             st.write(f"Текущий курс: **{ship['exchange_rate']} ₽**")
@@ -119,4 +169,5 @@ with tab4:
     st.subheader("Эффективность и LTV")
     st.write("Здесь будет накапливаться история ваших перевозок для анализа маржинальности и сроков.")
     chart_data = pd.DataFrame({'Этап': ['Закупка', 'Транзит', 'Таможня', 'Склад'], 'Дней': [5, 12, 3, 2]})
-    st.bar_chart(chart_data, x='Этап', y='Дней')
+    # Добавлен параметр color для графика в корпоративном красном цвете
+    st.bar_chart(chart_data, x='Этап', y='Дней', color="#c41230")
