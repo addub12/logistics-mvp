@@ -65,8 +65,8 @@ except Exception as e:
 # 3. Боковая панель и настройки путей
 LOGO_PATH = "IMG_20260430_182902.webp" 
 
-# 👇 ВСТАВЬТЕ СЮДА ПРЯМУЮ ССЫЛКУ НА ВАШУ ПАПКУ В GITHUB (ОБЯЗАТЕЛЬНО СО СЛЭШЕМ / НА КОНЦЕ) 👇
-GITHUB_PHOTOS_FOLDER = "https://github.com/addub12/logistics-mvp/tree/main/Photo/"
+# ИСПРАВЛЕНО: Теперь здесь правильная RAW-ссылка на папку
+GITHUB_PHOTOS_FOLDER = "https://raw.githubusercontent.com/addub12/logistics-mvp/main/Photo/"
 
 st.sidebar.image(LOGO_PATH, use_container_width=True)
 st.sidebar.markdown("<br>", unsafe_allow_html=True) # Небольшой отступ
@@ -174,7 +174,10 @@ with tab3:
                     if filename:
                         # Склеиваем путь к папке и имя файла
                         img_url = f"{GITHUB_PHOTOS_FOLDER}{filename}"
-                        st.image(img_url, caption=f"Отчет: {filename}")
+                        try:
+                            st.image(img_url, caption=f"Отчет: {filename}", use_container_width=True)
+                        except Exception:
+                            st.error(f"Не удалось загрузить: {filename}. Проверьте точное название и расширение.")
             else:
                 st.info("Фотоотчеты для данного груза пока не загружены.")
         else:
