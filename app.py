@@ -42,21 +42,29 @@ st.markdown("""
         border-bottom-color: #c41230 !important;
     }
     
-    /* Цвет значений метрик (теперь белый для лучшей читаемости) */
+    /* Цвет значений метрик */
     [data-testid="stMetricValue"] {
         color: white !important; 
     }
     
-    /* Цвет названий метрик (например, "Текущий баланс") тоже сделаем светлым на случай темной темы */
+    /* Цвет названий метрик */
     [data-testid="stMetricLabel"] {
         color: #e0e0e0 !important; 
     }
 
-    /* --- ФИКС ДЛЯ МОБИЛЬНОЙ КАРТЫ (Отключение перехвата прокрутки) --- */
+    /* --- ФИКС ДЛЯ TELEGRAM И МОБИЛЬНЫХ БРАУЗЕРОВ --- */
+    /* 1. Жестко запрещаем браузеру Telegram смахивать страницу вниз (swipe-to-close) */
+    html, body, [data-testid="stAppViewContainer"], .stApp {
+        overscroll-behavior-y: none !important;
+        overscroll-behavior: none !important;
+    }
+
+    /* 2. Отключаем перехват касаний самой картой */
     [data-testid="stDeckGlJsonChart"], 
     [data-testid="stDeckGlJsonChart"] div, 
     [data-testid="stDeckGlJsonChart"] canvas {
         touch-action: none !important;
+        overscroll-behavior: contain !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -64,7 +72,6 @@ st.markdown("""
 # 2. Подключение к данным
 try:
     conn = st.connection("gsheets", type=GSheetsConnection)
-    # Используем ttl=0, чтобы новые фото подтягивались мгновенно без кэширования
     df = conn.read(ttl=0)
 except Exception as e:
     st.error(f"Ошибка подключения к Google Sheets: {e}")
