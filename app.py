@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import pydeck as pdk
 from streamlit_gsheets import GSheetsConnection
+import streamlit.components.v1 as components # Добавили библиотеку для JavaScript
 
 # 1. Конфигурация страницы
 st.set_page_config(
@@ -9,6 +10,28 @@ st.set_page_config(
     page_icon="🦅", 
     layout="wide", 
     initial_sidebar_state="expanded"
+)
+
+# --- ЖЕСТКИЙ JAVASCRIPT ФИКС ДЛЯ TELEGRAM ---
+# Этот невидимый блок перехватывает свайпы на карте и не дает Telegram их увидеть
+components.html(
+    """
+    <script>
+    const parent = window.parent.document;
+    
+    function stopTelegramSwipe(e) {
+        // Если касание произошло внутри карты, блокируем передачу события выше
+        if(e.target.closest('.mapboxgl-map') || e.target.closest('[data-testid="stDeckGlJsonChart"]')) {
+            e.stopPropagation();
+        }
+    }
+    
+    // Перехватываем на этапе погружения (capture: true), чтобы ударить первыми
+    parent.addEventListener('touchstart', stopTelegramSwipe, {passive: false, capture: true});
+    parent.addEventListener('touchmove', stopTelegramSwipe, {passive: false, capture: true});
+    </script>
+    """,
+    height=0, width=0
 )
 
 # --- ИНТЕГРАЦИЯ КОРПОРАТИВНОГО СТИЛЯ (CSS) ---
@@ -24,7 +47,7 @@ st.markdown("""
         color: white !important;
     }
 
-    /* Стилизация кнопок (корпоративный красный) */
+    /* Стилизация кнопок */
     div.stButton > button:first-child {
         background-color: #c41230;
         color: white;
@@ -36,7 +59,7 @@ st.markdown("""
         color: white;
     }
 
-    /* Стилизация активной вкладки (красный акцент) */
+    /* Стилизация активной вкладки */
     .stTabs [data-baseweb="tab-list"] button[aria-selected="true"] {
         color: #c41230 !important;
         border-bottom-color: #c41230 !important;
@@ -52,19 +75,11 @@ st.markdown("""
         color: #e0e0e0 !important; 
     }
 
-    /* --- ФИКС ДЛЯ TELEGRAM И МОБИЛЬНЫХ БРАУЗЕРОВ --- */
-    /* 1. Жестко запрещаем браузеру Telegram смахивать страницу вниз (swipe-to-close) */
-    html, body, [data-testid="stAppViewContainer"], .stApp {
+    /* Отключаем свайпы по краям экрана для всего приложения */
+    html, body, .stApp {
         overscroll-behavior-y: none !important;
-        overscroll-behavior: none !important;
-    }
-
-    /* 2. Отключаем перехват касаний самой картой */
-    [data-testid="stDeckGlJsonChart"], 
-    [data-testid="stDeckGlJsonChart"] div, 
-    [data-testid="stDeckGlJsonChart"] canvas {
-        touch-action: none !important;
-        overscroll-behavior: contain !important;
+        overscroll-behavior-x: none !important;
+        overflow-x: hidden;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -79,18 +94,15 @@ except Exception as e:
 
 # 3. Боковая панель и настройки путей
 LOGO_PATH = "IMG_20260430_182902.webp" 
-
-# RAW-ссылка на папку в GitHub
 GITHUB_PHOTOS_FOLDER = "https://raw.githubusercontent.com/addub12/logistics-mvp/main/Photo/"
 
 st.sidebar.image(LOGO_PATH, use_container_width=True)
-st.sidebar.markdown("<br>", unsafe_allow_html=True) # Небольшой отступ
+st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
 st.sidebar.title("Личный кабинет")
 
 clients = df['client_name'].unique()
 selected_client = st.sidebar.selectbox("Выберите компанию:", clients)
-
 client_data = df[df['client_name'] == selected_client]
 
 st.sidebar.markdown("---")
@@ -102,6 +114,9 @@ if st.sidebar.button("💬 Написать в чат"):
 
 # 4. Главный экран: Верхние метрики
 st.title(f"Мониторинг грузов: {selected_client}")
+
+# Подсказка для пользователей Telegram (очень спасает конверсию и нервы клиентов!)
+st.caption("💡 *Если вы открыли ссылку в мессенджере (Telegram/WhatsApp) и карта листается с ошибками — нажмите 'Открыть в браузере' (Safari/Chrome) в меню.*")
 
 shipment_ids = client_data['shipment_id'].unique()
 selected_shipment_id = st.selectbox("Выберите номер груза для деталей:", shipment_ids)
@@ -131,7 +146,6 @@ with tab1:
         "ScatterplotLayer",
         data=pd.DataFrame([{'lat': ship['lat'], 'lon': ship['lon']}]),
         get_position="[lon, lat]",
-        # Цвет маркера на карте (корпоративный красный)
         get_color="[196, 18, 48, 200]", 
         get_radius=25000,
     )
@@ -178,21 +192,18 @@ with tab3:
     with a1:
         st.write("📷 **Лента фотоотчетов (п. 5.1):**")
         
-        # Загрузка фото: проверяем, есть ли данные в колонке photo_links
         if 'photo_links' in ship and pd.notna(ship['photo_links']):
             photos_raw = str(ship['photo_links'])
-            # Исключаем пустые значения или NaN
             if photos_raw.strip() and photos_raw.lower() not in ['nan', 'none', 'null']:
                 photos = photos_raw.split(',')
                 for p in photos:
                     filename = p.strip()
                     if filename:
-                        # Склеиваем путь к папке и имя файла
                         img_url = f"{GITHUB_PHOTOS_FOLDER}{filename}"
                         try:
                             st.image(img_url, caption=f"Отчет: {filename}", use_container_width=True)
                         except Exception:
-                            st.error(f"Не удалось загрузить: {filename}. Проверьте точное название и расширение.")
+                            st.error(f"Не удалось загрузить: {filename}")
             else:
                 st.info("Фотоотчеты для данного груза пока не загружены.")
         else:
@@ -207,5 +218,4 @@ with tab4:
     st.subheader("Эффективность и LTV")
     st.write("Здесь будет накапливаться история ваших перевозок для анализа маржинальности и сроков.")
     chart_data = pd.DataFrame({'Этап': ['Закупка', 'Транзит', 'Таможня', 'Склад'], 'Дней': [5, 12, 3, 2]})
-    # График в корпоративном красном цвете
     st.bar_chart(chart_data, x='Этап', y='Дней', color="#c41230")
