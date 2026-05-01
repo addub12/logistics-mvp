@@ -57,7 +57,8 @@ st.markdown("""
 # 2. Подключение к данным
 try:
     conn = st.connection("gsheets", type=GSheetsConnection)
-    df = conn.read()
+    # ИСПРАВЛЕНИЕ: ttl=0 заставляет Streamlit брать самые свежие данные из Google Таблиц
+    df = conn.read(ttl=0)
 except Exception as e:
     st.error(f"Ошибка подключения к Google Sheets: {e}")
     st.stop()
@@ -65,7 +66,7 @@ except Exception as e:
 # 3. Боковая панель и настройки путей
 LOGO_PATH = "IMG_20260430_182902.webp" 
 
-# ИСПРАВЛЕНО: Теперь здесь правильная RAW-ссылка на папку
+# RAW-ссылка на папку в GitHub
 GITHUB_PHOTOS_FOLDER = "https://raw.githubusercontent.com/addub12/logistics-mvp/main/Photo/"
 
 st.sidebar.image(LOGO_PATH, use_container_width=True)
