@@ -51,13 +51,20 @@ st.markdown("""
     [data-testid="stMetricLabel"] {
         color: #e0e0e0 !important; 
     }
+
+    /* --- ФИКС ДЛЯ МОБИЛЬНОЙ КАРТЫ (Отключение перехвата прокрутки) --- */
+    [data-testid="stDeckGlJsonChart"], 
+    [data-testid="stDeckGlJsonChart"] div, 
+    [data-testid="stDeckGlJsonChart"] canvas {
+        touch-action: none !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # 2. Подключение к данным
 try:
     conn = st.connection("gsheets", type=GSheetsConnection)
-    # ИСПРАВЛЕНИЕ: ttl=0 заставляет Streamlit брать самые свежие данные из Google Таблиц
+    # Используем ttl=0, чтобы новые фото подтягивались мгновенно без кэширования
     df = conn.read(ttl=0)
 except Exception as e:
     st.error(f"Ошибка подключения к Google Sheets: {e}")
