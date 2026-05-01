@@ -66,7 +66,7 @@ except Exception as e:
 LOGO_PATH = "IMG_20260430_182902.webp" 
 
 # 👇 ВСТАВЬТЕ СЮДА ПРЯМУЮ ССЫЛКУ НА ВАШУ ПАПКУ В GITHUB (ОБЯЗАТЕЛЬНО СО СЛЭШЕМ / НА КОНЦЕ) 👇
-GITHUB_PHOTOS_FOLDER = "https://raw.githubusercontent.com/ВАШ_ЛОГИН/ВАШ_РЕПОЗИТОРИЙ/main/НАЗВАНИЕ_ПАПКИ/"
+GITHUB_PHOTOS_FOLDER = "https://github.com/addub12/logistics-mvp/tree/main/Photo/"
 
 st.sidebar.image(LOGO_PATH, use_container_width=True)
 st.sidebar.markdown("<br>", unsafe_allow_html=True) # Небольшой отступ
